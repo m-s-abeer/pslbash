@@ -100,14 +100,14 @@ async def checkout_all(channel):
 async def clear_checkin_all(channel):
     users_list = await get_all_user_data()
     for user in users_list:
-        user.last_checkin = ("", "")
+        user.last_checkin = ("0000-00-00", "00:00:00")
     await channel.send("Cleared all last checkin history")
 
 
 async def clear_checkout_all(channel):
     users_list = await get_all_user_data()
     for user in users_list:
-        user.last_checkout = ("", "")
+        user.last_checkout = ("0000-00-00", "00:00:00")
     await channel.send("Cleared all last checkout history")
 
 

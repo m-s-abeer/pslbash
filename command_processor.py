@@ -79,12 +79,10 @@ async def show_personal_data(message, user_data, key, value):
             msg += f"**Schedule type:** Global\n"
 
         try:
-            from datetime import time
-
             last_cin_date = user_data.last_checkin["date"]
             last_cin_hh, last_cin_mm = user_data.last_checkin["time"].split(":")[:2]
             last_cout_date = user_data.last_checkout["date"]
-            last_cout_hh, last_cout_mm = user_data.last_checkout["time"]
+            last_cout_hh, last_cout_mm = user_data.last_checkout["time"].split(":")[:2]
             msg += "==============================\n"
             msg += f"**Vacation Mode:** {bool(user_data.vacation)}\n"
             msg += f"**Last Checkin:** {last_cin_date} {last_cin_hh}:{last_cin_mm}\n"
