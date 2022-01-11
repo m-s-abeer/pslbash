@@ -1,130 +1,117 @@
-from replit import db
-from db_handler import get_all_users, get_last_checked_in, get_last_checked_out, set_last_checked_in, set_last_checked_out, set_attendance_format_if_missing, get_is_active, clear_last_checked_in, clear_last_checked_out
-from utils import post_data, decrypt_string, get_cur_bangladeshi_date, get_cur_bangladeshi_time, time_in_range, time_difference_in_mins, ping_heroku
-import random
+from db_handler import set_last_checked_in, set_last_checked_out, get_all_user_data
+from utils import (
+    post_data,
+    decrypt_string,
+    get_cur_bangladeshi_date,
+    get_cur_bangladeshi_time,
+    time_in_range,
+    time_difference_in_mins,
+    ping_heroku,
+    get_user_mention_string,
+)
 from datetime import time
 import asyncio
 
 
-async def deactivate_till_updated(channel, author):
+async def deactivate_till_updated(channel, user_data):
     await channel.send(
-        f'{author.mention} Your email/pass is not set properly. Deactivating your automated attendance till you update email/pass and activate again.'
+        f"{user_data.mention} Your email/pass is not set properly. Deactivating your automated attendance till you update email/pass and activate again."
     )
-    db['id_profiles'][str(author.id)]['activated'] = 0
+    user_data.disabled = True
 
 
-async def checkin(channel, author):
+async def checkin(channel, user_data):
     try:
-        email = db['id_profiles'][str(author.id)]['email']
-        password = db['id_profiles'][str(author.id)]['pass']
+        email = user_data.email
+        password = user_data.password
+        if not email or not password:
+            raise
     except:
-        await deactivate_till_updated(channel, author)
+        await deactivate_till_updated(channel, user_data)
+        return
+    await channel.send(f"{user_data.mention} Checking in " + user_data.email)
+
+    response = post_data(
+        "https://pslhobasher.herokuapp.com/pslbasher/checkin/",
+        {"username": email, "password": decrypt_string(password)},
+    )
+
+    if response.status_code == 200:
+        await set_last_checked_in(user_data)
+        await channel.send(f"{user_data.mention} Checked in successfully! Have a nice day!")
+    else:
+        await channel.send(f"{user_data.mention} Check in failed with errors " + str(response.status_code))
+
+
+async def checkout(channel, user_data):
+    try:
+        email = user_data.email
+        password = user_data.password
+        if not email or not password:
+            raise
+    except:
+        await deactivate_till_updated(channel, user_data)
         return
 
-    if not email or not password:
-        await deactivate_till_updated(channel, author)
+    await channel.send(f"{user_data.mention} Checking out " + user_data.email)
+
+    response = post_data(
+        "https://pslhobasher.herokuapp.com/pslbasher/checkout/",
+        {"username": email, "password": decrypt_string(password)},
+    )
+
+    if response.status_code == 200:
+        await set_last_checked_out(user_data)
+        await channel.send(f"{user_data.mention} Checked out successfully! Seeya!")
     else:
-        await channel.send(f'{author.mention} Checking in ' +
-                           db['id_profiles'][str(author.id)]['email'])
-
-        response = post_data(
-            'https://pslhobasher.herokuapp.com/pslbasher/checkin/', {
-                'username': email,
-                'password': decrypt_string(password)
-            })
-
-        if (response.status_code == 200):
-            await set_last_checked_in(author)
-            await channel.send(
-                f'{author.mention} Checked in successfully! Have a nice day!')
-        else:
-            await channel.send(
-                f'{author.mention} Check in failed with errors ' +
-                str(response.status_code))
-
-
-async def checkout(channel, author):
-    try:
-        email = db['id_profiles'][str(author.id)]['email']
-        password = db['id_profiles'][str(author.id)]['pass']
-    except:
-        await deactivate_till_updated(channel, author)
-        return
-
-    if not email or not password:
-        await deactivate_till_updated(channel, author)
-    else:
-        await channel.send(f'{author.mention} Checking out ' +
-                           db['id_profiles'][str(author.id)]['email'])
-
-        response = post_data(
-            'https://pslhobasher.herokuapp.com/pslbasher/checkout/', {
-                'username': email,
-                'password': decrypt_string(password)
-            })
-
-        if (response.status_code == 200):
-            await set_last_checked_out(author)
-            await channel.send(
-                f'{author.mention} Checked out successfully! Seeya!')
-        else:
-            await channel.send(
-                f'{author.mention} Check out failed with errors ' +
-                str(response.status_code))
+        await channel.send(f"{user_data.mention} Check out failed with errors " + str(response.status_code))
 
 
 async def checkin_all(channel):
     cur_date = get_cur_bangladeshi_date()
-    users_list = await get_all_users()
-    for user in users_list:
-        set_attendance_format_if_missing(user)
-        if get_is_active(user) and get_last_checked_in(user) != str(cur_date):
-            await checkin(channel, user)
+    users_list = await get_all_user_data()
+    for user_data in users_list:
+        try:
+            if (
+                user_data.disabled is False
+                and user_data.vacation is False
+                and user_data.last_checkin["date"] != str(cur_date)
+            ):
+                await checkin(channel, user_data)
+        except:
+            pass
 
 
 async def checkout_all(channel):
     cur_date = get_cur_bangladeshi_date()
-    users_list = await get_all_users()
-    for user in users_list:
-        set_attendance_format_if_missing(user)
-        if get_is_active(user) and get_last_checked_out(user) != str(cur_date):
-            await checkout(channel, user)
+    users_list = await get_all_user_data()
+    for user_data in users_list:
+        try:
+            if (
+                user_data.disabled is False
+                and user_data.vacation is False
+                and user_data.last_checkout["date"] != str(cur_date)
+            ):
+                await checkout(channel, user_data)
+        except:
+            pass
 
 
 async def clear_checkin_all(channel):
-    users_list = await get_all_users()
+    users_list = await get_all_user_data()
     for user in users_list:
-        set_attendance_format_if_missing(user)
-        await clear_last_checked_in(user)
-    await channel.send('Cleared all last checkin history')
+        user.last_checkin = ("", "")
+    await channel.send("Cleared all last checkin history")
 
 
 async def clear_checkout_all(channel):
-    users_list = await get_all_users()
+    users_list = await get_all_user_data()
     for user in users_list:
-        set_attendance_format_if_missing(user)
-        await clear_last_checked_out(user)
-    await channel.send('Cleared all last checkout history')
-
-
-async def scheduled_checkin(channel, user, type_of_sc='globally'):
-
-    # await channel.send(
-    #     f'Trying {type_of_sc} scheduled checkin for {user.mention}'
-    # )
-    await checkin(channel, user)
-
-
-async def scheduled_checkout(channel, user, type_of_sc='globallly'):
-
-    # await channel.send(
-    #     f'Trying {type_of_sc} scheduled checkout for {user.mention}'
-    # )
-    await checkout(channel, user)
+        user.last_checkout = ("", "")
+    await channel.send("Cleared all last checkout history")
 
 
 async def scheduled_checkin_checkout(channel):
-
     g_checkin_start_time = time(hour=8, minute=45)
     g_checkin_end_time = time(hour=9, minute=30)
 
@@ -133,77 +120,59 @@ async def scheduled_checkin_checkout(channel):
 
     cur_date = get_cur_bangladeshi_date()
     cur_time = get_cur_bangladeshi_time()
-    users_list = await get_all_users()
+    users_list = await get_all_user_data()
+
     for user in users_list:
-        set_attendance_format_if_missing(user)
-        if get_is_active(user):
-            if get_last_checked_in(user) != str(cur_date):
-                try:
-                    checkin_start_hh = db['id_profiles'][str(
-                        user.id)]['checkin_start_hh']
-                    checkin_start_mm = db['id_profiles'][str(
-                        user.id)]['checkin_start_mm']
-                    checkin_start_time = time(hour=checkin_start_hh,
-                                              minute=checkin_start_mm)
-                    checkin_end_time = time(hour=checkin_start_hh + 1,
-                                            minute=checkin_start_mm)
+        if user.disabled is False:
+            try:
+                if user.last_checkin and user.last_checkin["date"] == str(cur_date):
+                    continue
 
-                    before_checkin_mins = time_difference_in_mins(
-                        cur_time, checkin_start_time)
+                checkin_start_hh = user.checkin_after["hh"]
+                checkin_start_mm = user.checkin_after["mm"]
+                checkin_start_time = time(hour=checkin_start_hh, minute=checkin_start_mm)
+                checkin_end_time = time(hour=checkin_start_hh + 1, minute=checkin_start_mm)
 
-                    if (before_checkin_mins >= 0
-                            and before_checkin_mins <= 15):
-                        await ping_heroku()
+                before_checkin_mins = time_difference_in_mins(cur_time, checkin_start_time)
 
-                    if time_in_range(checkin_start_time, checkin_end_time,
-                                     cur_time):
-                        asyncio.create_task(
-                            scheduled_checkin(channel, user, 'personally'))
+                if 0 <= before_checkin_mins <= 15:
+                    await ping_heroku()
 
-                except:
+                if time_in_range(checkin_start_time, checkin_end_time, cur_time):
+                    asyncio.create_task(checkin(channel, user))
 
-                    before_checkin_mins = time_difference_in_mins(
-                        cur_time, g_checkin_start_time)
+            except:
+                before_checkin_mins = time_difference_in_mins(cur_time, g_checkin_start_time)
 
-                    if (before_checkin_mins >= 0
-                            and before_checkin_mins <= 15):
-                        await ping_heroku()
+                if 0 <= before_checkin_mins <= 15:
+                    await ping_heroku()
 
-                    if time_in_range(g_checkin_start_time, g_checkin_end_time,
-                                     cur_time):
-                        asyncio.create_task(scheduled_checkin(channel, user))
-            if get_last_checked_out(user) != str(cur_date):
-                try:
-                    checkout_start_hh = db['id_profiles'][str(
-                        user.id)]['checkout_start_hh']
-                    checkout_start_mm = db['id_profiles'][str(
-                        user.id)]['checkout_start_mm']
-                    checkout_start_time = time(hour=checkout_start_hh,
-                                               minute=checkout_start_mm)
-                    checkout_end_time = time(hour=checkout_start_hh + 1,
-                                             minute=checkout_start_mm)
+                if time_in_range(g_checkin_start_time, g_checkin_end_time, cur_time):
+                    asyncio.create_task(checkin(channel, user))
 
-                    before_checkout_mins = time_difference_in_mins(
-                        cur_time, checkout_start_time)
+            try:
+                if user.last_checkout and user.last_checkout["date"] == str(cur_date):
+                    continue
 
-                    if (before_checkout_mins >= 0
-                            and before_checkout_mins <= 15):
-                        await ping_heroku()
+                checkout_start_hh = user.checkout_after["hh"]
+                checkout_start_mm = user.checkout_after["mm"]
+                checkout_start_time = time(hour=checkout_start_hh, minute=checkout_start_mm)
+                checkout_end_time = time(hour=checkout_start_hh + 1, minute=checkout_start_mm)
 
-                    if time_in_range(checkout_start_time, checkout_end_time,
-                                     cur_time):
-                        asyncio.create_task(
-                            scheduled_checkout(channel, user, 'personally'))
+                before_checkout_mins = time_difference_in_mins(cur_time, checkout_start_time)
 
-                except:
+                if 0 <= before_checkout_mins <= 15:
+                    await ping_heroku()
 
-                    before_checkout_mins = time_difference_in_mins(
-                        cur_time, g_checkout_start_time)
+                if time_in_range(checkout_start_time, checkout_end_time, cur_time):
+                    asyncio.create_task(checkout(channel, user))
 
-                    if (before_checkout_mins >= 0
-                            and before_checkout_mins <= 15):
-                        await ping_heroku()
+            except:
 
-                    if time_in_range(g_checkout_start_time,
-                                     g_checkout_end_time, cur_time):
-                        asyncio.create_task(scheduled_checkout(channel, user))
+                before_checkout_mins = time_difference_in_mins(cur_time, g_checkout_start_time)
+
+                if 0 <= before_checkout_mins <= 15:
+                    await ping_heroku()
+
+                if time_in_range(g_checkout_start_time, g_checkout_end_time, cur_time):
+                    asyncio.create_task(checkout(channel, user))

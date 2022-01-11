@@ -1,111 +1,122 @@
 import random
-from replit import db
+from db_ops.default_config_handler import DefaultConfigHandler
 from utils import encrypt_string, get_command_and_text_pair
 from attendance_handler import checkin, checkin_all, checkout_all, checkout, clear_checkin_all, clear_checkout_all
-from db_handler import get_last_checked_in, get_last_checked_out, get_is_active, get_email
 
 
-async def set_profile_key_value(message, author, key, value):
-
-    if key in ["email", "pass", "activated"]:
-        if key not in db["id_profiles"][str(author.id)].keys():
-            db["id_profiles"][str(author.id)][key] = ""
-
-        if key.startswith("pass"):
-            pw = encrypt_string(value)
-            db["id_profiles"][str(author.id)][key] = pw
-        else:
-            db["id_profiles"][str(author.id)][key] = value
-        await message.channel.send(f"{author.mention} Your {key} is set")
+async def set_profile_key_value(message, user_data, key, value):
+    if key == "email":
+        user_data.email = value
+        await message.channel.send(f"{user_data.mention} Your {key} is set")
         await message.delete()
-    elif key in ["checkin_start", "checkout_start"]:
+    elif key == "pass":
+        user_data.password = encrypt_string(value.strip())
+        await message.channel.send(f"{user_data.mention} Your {key} is set")
+        await message.delete()
+    elif key == "activate":
+        user_data.disabled = not bool(value)
+        await message.channel.send(f"{user_data.mention} Your account is activated. Try checking in now.")
+    elif key == "vacation":
+        user_data.vacation = bool(value)
+        await message.channel.send(f"{user_data.mention} Your vacation mode is updated. Check your profile.")
+    elif key == "cin_from":
         try:
             values = value.split(" ")
             hour = int(values[0])
             minute = int(values[1])
 
-            db["id_profiles"][str(author.id)][key + "_hh"] = hour
-            db["id_profiles"][str(author.id)][key + "_mm"] = minute
-            await message.channel.send(f"{author.mention} Your {key} is set")
+            user_data.checkin_after = (hour, minute)
+            await message.channel.send(f"{user_data.mention} Your {key} is set")
         except:
-            await message.channel.send("Invalid command 2!")
-    elif key == "profile":
-        db["id_profiles"][str(author.id)] = db["profiles"][str(author)]
-        await message.channel.send(f"{author.mention} successful!")
+            await message.channel.send("Invalid command!")
+    elif key == "cout_from":
+        try:
+            values = value.split(" ")
+            hour = int(values[0])
+            minute = int(values[1])
+
+            user_data.checkout_after = (hour, minute)
+            await message.channel.send(f"{user_data.mention} Your {key} is set")
+        except:
+            await message.channel.send("Invalid command!")
     else:
         await message.channel.send("Invalid command!")
 
 
-async def set_config_key_value(message, author, key, value):
-
-    if key in ["channel_id", "auto_schedule", "weekend_message"]:
-        if key not in db["config"].keys():
-            db["config"][key] = ""
-
-        if key == "weekend_message":
-            db["config"][key] = value
-        else:
-            db["config"][key] = int(value)
-
-        await message.channel.send(f"{author.mention} Global {key} is set to " + f'"{value}"')
-    elif key in "clr_all_cin_history":
+async def set_config_key_value(message, user_data, key, value):
+    if key == "channel_id":
+        DefaultConfigHandler().channel_id = int(value)
+        await message.channel.send(f'{user_data.mention} Global {key} is set to "{value}"')
+    elif key == "auto_schedule":
+        DefaultConfigHandler().auto_schedule = bool(value)
+        await message.channel.send(f'{user_data.mention} Global {key} is set to "{value}"')
+    elif key == "clr_all_cin_history":
         await clear_checkin_all(message.channel)
-    elif key in "clr_all_cout_history":
+    elif key == "clr_all_cout_history":
         await clear_checkout_all(message.channel)
     else:
         await message.channel.send("Invalid command!")
 
 
-async def show_personal_data(message, author, key, value):
+async def show_personal_data(message, user_data, key, value):
     if key == "profile":
-        msg = f"{author.mention}\n\n"
-        msg += f"**ID:** {author.id}\n"
-        msg += f"**Tag:** {str(author)}\n"
-        msg += f"**Email:** {get_email(author)}\n"
+        msg = f"{user_data.mention}\n\n"
+        msg += f"**ID:** {user_data.uuid}\n"
+        # msg += f"**Tag:** {str(author)}\n"
+        msg += f"**Email:** {user_data.email}\n"
+        msg += f"**Disabled:** {user_data.disabled}\n"
         msg += "==============================\n"
 
         try:
-            checkin_start_hh = db["id_profiles"][str(author.id)]["checkin_start_hh"]
-            checkin_start_mm = db["id_profiles"][str(author.id)]["checkin_start_mm"]
-            checkout_start_hh = db["id_profiles"][str(author.id)]["checkout_start_hh"]
-            checkout_start_mm = db["id_profiles"][str(author.id)]["checkout_start_mm"]
+            checkin_start_hh = user_data.checkin_after["hh"]
+            checkin_start_mm = user_data.checkin_after["mm"]
+            checkout_start_hh = user_data.checkout_after["hh"]
+            checkout_start_mm = user_data.checkout_after["mm"]
             msg += f"**Schedule type:** Personal\n"
             msg += f"**Checkin start:** {checkin_start_hh}:{checkin_start_mm}\n"
             msg += f"**Checkout start:** {checkout_start_hh}:{checkout_start_mm}\n"
         except:
             msg += f"**Schedule type:** Global\n"
 
-        msg += "==============================\n"
-        msg += f"**Auto Schedule:** {get_is_active(author)}\n"
-        msg += f"**Last Checkin:** {get_last_checked_in(author)}\n"
-        msg += f"**Last Checkout:** {get_last_checked_out(author)}\n"
+        try:
+            from datetime import time
+
+            last_cin_date = user_data.last_checkin["date"]
+            last_cin_hh, last_cin_mm = user_data.last_checkin["time"].split(":")[:2]
+            last_cout_date = user_data.last_checkout["date"]
+            last_cout_hh, last_cout_mm = user_data.last_checkout["time"]
+            msg += "==============================\n"
+            msg += f"**Vacation Mode:** {bool(user_data.vacation)}\n"
+            msg += f"**Last Checkin:** {last_cin_date} {last_cin_hh}:{last_cin_mm}\n"
+            msg += f"**Last Checkout:** {last_cout_date} {last_cout_hh}:{last_cout_mm}\n"
+        except:
+            pass
 
         await message.channel.send(msg)
 
 
-async def process_command(message, author, text):
-
+async def process_command(message, user_data, text):
     command, text = get_command_and_text_pair(text)
 
     if command == "set":
         key, value = get_command_and_text_pair(text)
-        await set_profile_key_value(message, author, key, value)
-    elif command == "checkin":
+        await set_profile_key_value(message, user_data, key, value)
+    elif command == "cin":
         if text and "all" in text:
             await checkin_all(message.channel)
         else:
-            await checkin(message.channel, author)
-    elif command == "checkout":
+            await checkin(message.channel, user_data)
+    elif command == "cout":
         if text and "all" in text:
             await checkout_all(message.channel)
         else:
-            await checkout(message.channel, author)
+            await checkout(message.channel, user_data)
     elif command == "config":
         key, value = get_command_and_text_pair(text)
-        await set_config_key_value(message, author, key, value)
+        await set_config_key_value(message, user_data, key, value)
     elif command == "show":
         key, value = get_command_and_text_pair(text)
-        await show_personal_data(message, author, key, value)
+        await show_personal_data(message, user_data, key, value)
     elif command == "test":
         print(command)
     else:
@@ -167,4 +178,4 @@ async def process_command(message, author, text):
         ]
 
         random_reply = random.choice(random_replies)
-        await message.channel.send(f"{author.mention} {random_reply}")
+        await message.channel.send(f"{user_data.mention} {random_reply}")
