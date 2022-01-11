@@ -20,6 +20,10 @@ class AttendanceLogHandler(MongoDBDoc):
 
     def __init__(self, _discord_id):
         super().__init__(_collection="attendance_log", _doc_name=_discord_id)
+        if not self.last_checkin:
+            self.last_checkin = ("0000-00-00", "00:00:00")
+        if not self.last_checkout:
+            self.last_checkout = ("0000-00-00", "00:00:00")
 
     """
     last_checkin
