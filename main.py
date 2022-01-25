@@ -1,8 +1,8 @@
 import os
 
-from db_ops.default_config_handler import DefaultConfigHandler
+from data_classes.default_config_handler import DefaultConfigHandler
 from keep_alive import keep_alive
-from user_data_repo import UserData
+from data_classes.user_data_repo import UserData
 from utils import get_command_and_text_pair
 from command_processor import process_command
 from attendance_schedule import AttendanceSchedule
@@ -21,7 +21,7 @@ def help_info():
 **pslbash show profile**: To view your profile info
 **pslbash set email <your_psl_ho_email>**: To set your email
 **pslbash set pass <your_psl_ho_password>**: To set your password(saved encrypted)
-**pslbash set activate B**: To activate auto_schedule, set B as 1 or 0 otherwise
+**pslbash set activate**: To activate your scheduling account if disabled automatically
 **pslbash set vacation B**: To activate vacation mode, set B as 1 or 0 otherwise
 **pslbash set cin_from HH MM**: To set personal start time of checkin, the time is in UTC+0600 and 24hours format.
 **pslbash set cout_from HH MM**: To set personal start time of checkout, the time is in UTC+0600 and 24hours format.
@@ -56,11 +56,11 @@ async def on_message(message):
     author = message.author
 
     if message.content.startswith("pslbash"):
-        user_data = UserData(author.id, author.mention)
+        user_data = UserData(author.id)
         command, text = get_command_and_text_pair(message.content)
         if "pass" not in message.content:
             print(message.author, message.content)
-        if text == None:
+        if text is None:
             await message.channel.send(help_info())
         else:
             await process_command(message, user_data, text)

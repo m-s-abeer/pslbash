@@ -1,12 +1,12 @@
-from db_ops.discord_user_handler import DiscordUserHandler
-from db_ops.ho_credential_handler import HoCredentialHandler
-from db_ops.personal_config_handler import PersonalConfigHandler
-from db_ops.attendance_log_handler import AttendanceLogHandler
+from data_classes.discord_user_handler import DiscordUserHandler
+from data_classes.ho_credential_handler import HoCredentialHandler
+from data_classes.personal_config_handler import PersonalConfigHandler
+from data_classes.attendance_log_handler import AttendanceLogHandler
 
 
 class UserData:
-    def __init__(self, discord_id, mention_string=None):
-        self.discord_user = DiscordUserHandler(discord_id, mention_string)
+    def __init__(self, discord_id):
+        self.discord_user = DiscordUserHandler(discord_id)
         self.ho_credential = HoCredentialHandler(discord_id)
         self.personal_config = PersonalConfigHandler(discord_id)
         self.attendance_log = AttendanceLogHandler(discord_id)
@@ -22,10 +22,6 @@ class UserData:
     @property
     def mention(self):
         return self.discord_user.mention
-
-    @mention.setter
-    def mention(self, mention):
-        self.discord_user.mention = mention
 
     @property
     def disabled(self):
@@ -57,7 +53,7 @@ class UserData:
 
     @vacation.setter
     def vacation(self, vacation):
-        self.ho_credential.ho_pass = vacation
+        self.personal_config.vacation = vacation
 
     @property
     def checkin_after(self):

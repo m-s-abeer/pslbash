@@ -6,7 +6,7 @@ sys.path.append("..")
 from env_vars import MONGO_CERT_PATH
 
 
-class SingletonDB:
+class MongoSingleton:
     _fsdb = None
 
     def __init__(self, *args, **kwargs):
@@ -20,4 +20,4 @@ class SingletonDB:
         return self._fsdb
 
 
-fsdb = SingletonDB()
+fsdb = MongoSingleton()

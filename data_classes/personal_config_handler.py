@@ -37,6 +37,8 @@ class PersonalConfigHandler(MongoDBDoc):
     def __del_vacation(self):
         self.db_delete_field("vacation")
 
+    vacation = property(__get_vacation, __set_vacation, __del_vacation)
+
     """
     checkin_after
     """
@@ -50,6 +52,8 @@ class PersonalConfigHandler(MongoDBDoc):
 
     def __del_checkin_after(self):
         self.db_delete_field("checkin_after")
+
+    checkin_after = property(__get_checkin_after, __set_checkin_after, __del_checkin_after)
 
     """
     checkout_after
@@ -65,9 +69,4 @@ class PersonalConfigHandler(MongoDBDoc):
     def __del_checkout_after(self):
         self.db_delete_field("checkout_after")
 
-    """
-    Properties
-    """
-    vacation = property(__get_vacation, __set_vacation, __del_vacation)
-    checkin_after = property(__get_checkin_after, __set_checkin_after, __del_checkin_after)
     checkout_after = property(__get_checkout_after, __set_checkout_after, __del_checkout_after)

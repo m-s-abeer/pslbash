@@ -39,6 +39,8 @@ class DefaultConfigHandler(MongoDBDoc):
     def __del_channel_id(self):
         self.db_delete_field("channel_id")
 
+    channel_id = property(__get_channel_id, __set_channel_id, __del_channel_id)
+
     """
     auto_schedule
     """
@@ -47,13 +49,10 @@ class DefaultConfigHandler(MongoDBDoc):
         return self.db_get_value_by_key("auto_schedule")
 
     def __set_auto_schedule(self, auto_schedule):
+        print("lol", auto_schedule)
         self.db_upsert_field_value("auto_schedule", auto_schedule)
 
     def __del_auto_schedule(self):
         self.db_delete_field("auto_schedule")
 
-    """
-    Properties
-    """
-    channel_id = property(__get_channel_id, __set_channel_id, __del_channel_id)
     auto_schedule = property(__get_auto_schedule, __set_auto_schedule, __del_auto_schedule)

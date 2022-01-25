@@ -1,5 +1,4 @@
 import requests
-import json
 import os
 from Crypto.Cipher import AES
 import base64

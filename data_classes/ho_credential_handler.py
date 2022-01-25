@@ -32,6 +32,8 @@ class HoCredentialHandler(MongoDBDoc):
     def __del_ho_email(self):
         self.db_delete_field("ho_email")
 
+    ho_email = property(__get_ho_email, __set_ho_email, __del_ho_email)
+
     """
     ho_pass
     """
@@ -45,5 +47,4 @@ class HoCredentialHandler(MongoDBDoc):
     def __del_ho_pass(self):
         self.db_delete_field("ho_pass")
 
-    ho_email = property(__get_ho_email, __set_ho_email, __del_ho_email)
     ho_pass = property(__get_ho_pass, __set_ho_pass, __del_ho_pass)

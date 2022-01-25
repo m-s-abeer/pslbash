@@ -1,4 +1,4 @@
-from .pymongo_db_config import fsdb
+from .pymongo_singleton import fsdb
 
 db = fsdb.get_fsdb()
 

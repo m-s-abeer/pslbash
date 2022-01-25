@@ -1,5 +1,7 @@
 import random
-from db_ops.default_config_handler import DefaultConfigHandler
+
+from db_handler import get_all_user_data
+from data_classes.default_config_handler import DefaultConfigHandler
 from utils import encrypt_string, get_command_and_text_pair
 from attendance_handler import checkin, checkin_all, checkout_all, checkout, clear_checkin_all, clear_checkout_all
 
@@ -14,11 +16,14 @@ async def set_profile_key_value(message, user_data, key, value):
         await message.channel.send(f"{user_data.mention} Your {key} is set")
         await message.delete()
     elif key == "activate":
-        user_data.disabled = not bool(value)
-        await message.channel.send(f"{user_data.mention} Your account is activated. Try checking in now.")
+        user_data.disabled = False
+        await message.channel.send(f"{user_data.mention} Your account activated. Try checking in now.")
+        await show_personal_data(message, user_data)
     elif key == "vacation":
-        user_data.vacation = bool(value)
-        await message.channel.send(f"{user_data.mention} Your vacation mode is updated. Check your profile.")
+        value = bool(int(value))
+        user_data.vacation = value
+        await message.channel.send(f"{user_data.mention} Your vacation mode is set to {value}. Check your profile.")
+        await show_personal_data(message, user_data)
     elif key == "cin_from":
         try:
             values = value.split(" ")
@@ -46,10 +51,11 @@ async def set_profile_key_value(message, user_data, key, value):
 async def set_config_key_value(message, user_data, key, value):
     if key == "channel_id":
         DefaultConfigHandler().channel_id = int(value)
-        await message.channel.send(f'{user_data.mention} Global {key} is set to "{value}"')
+        await message.channel.send(f"{user_data.mention} Global {key} is set to {int(value)}")
     elif key == "auto_schedule":
-        DefaultConfigHandler().auto_schedule = bool(value)
-        await message.channel.send(f'{user_data.mention} Global {key} is set to "{value}"')
+        value = bool(int(value))
+        DefaultConfigHandler().auto_schedule = value
+        await message.channel.send(f"{user_data.mention} Global {key} is set to {value}")
     elif key == "clr_all_cin_history":
         await clear_checkin_all(message.channel)
     elif key == "clr_all_cout_history":
@@ -58,39 +64,39 @@ async def set_config_key_value(message, user_data, key, value):
         await message.channel.send("Invalid command!")
 
 
-async def show_personal_data(message, user_data, key, value):
-    if key == "profile":
-        msg = f"{user_data.mention}\n\n"
-        msg += f"**ID:** {user_data.uuid}\n"
-        # msg += f"**Tag:** {str(author)}\n"
-        msg += f"**Email:** {user_data.email}\n"
-        msg += f"**Disabled:** {user_data.disabled}\n"
-        msg += "==============================\n"
+async def show_personal_data(message, user_data):
+    msg = f">>>>>>>>>>{user_data.mention}<<<<<<<<<<\n"
+    msg += f"Showing your profile info\n"
+    msg += f"** ID:** {user_data.uuid}\n"
+    msg += f"** Email:** {user_data.email}\n"
+    msg += f"** Disabled:** {user_data.disabled}\n"
+    msg += "=========================\n"
 
-        try:
-            checkin_start_hh = user_data.checkin_after["hh"]
-            checkin_start_mm = user_data.checkin_after["mm"]
-            checkout_start_hh = user_data.checkout_after["hh"]
-            checkout_start_mm = user_data.checkout_after["mm"]
-            msg += f"**Schedule type:** Personal\n"
-            msg += f"**Checkin start:** {checkin_start_hh}:{checkin_start_mm}\n"
-            msg += f"**Checkout start:** {checkout_start_hh}:{checkout_start_mm}\n"
-        except:
-            msg += f"**Schedule type:** Global\n"
+    try:
+        checkin_start_hh = user_data.checkin_after["hh"]
+        checkin_start_mm = user_data.checkin_after["mm"]
+        checkout_start_hh = user_data.checkout_after["hh"]
+        checkout_start_mm = user_data.checkout_after["mm"]
+        msg += f"** Schedule type:** Personal\n"
+        msg += f"** Checkin start:** {checkin_start_hh:02d}:{checkin_start_mm:02d}\n"
+        msg += f"** Checkout start:** {checkout_start_hh:02d}:{checkout_start_mm:02d}\n"
+    except:
+        msg += f"** Schedule type:** Global\n"
 
-        try:
-            last_cin_date = user_data.last_checkin["date"]
-            last_cin_hh, last_cin_mm = user_data.last_checkin["time"].split(":")[:2]
-            last_cout_date = user_data.last_checkout["date"]
-            last_cout_hh, last_cout_mm = user_data.last_checkout["time"].split(":")[:2]
-            msg += "==============================\n"
-            msg += f"**Vacation Mode:** {bool(user_data.vacation)}\n"
-            msg += f"**Last Checkin:** {last_cin_date} {last_cin_hh}:{last_cin_mm}\n"
-            msg += f"**Last Checkout:** {last_cout_date} {last_cout_hh}:{last_cout_mm}\n"
-        except:
-            pass
+    try:
+        last_cin_date = user_data.last_checkin["date"]
+        last_cin_hh, last_cin_mm = [int(x) for x in user_data.last_checkin["time"].split(":")[:2]]
+        last_cout_date = user_data.last_checkout["date"]
+        last_cout_hh, last_cout_mm = [int(x) for x in user_data.last_checkout["time"].split(":")[:2]]
+        msg += "=========================\n"
+        msg += f"** Vacation Mode:** {bool(user_data.vacation)}\n"
+        msg += f"** Last Checkin:** {last_cin_date} {last_cin_hh:02d}:{last_cin_mm:02d}\n"
+        msg += f"** Last Checkout:** {last_cout_date} {last_cout_hh:02d}:{last_cout_mm:02d}\n"
+    except:
+        pass
+    msg += f"<<<<<<<<<<{user_data.mention}>>>>>>>>>>\n\n"
 
-        await message.channel.send(msg)
+    await message.channel.send(msg)
 
 
 async def process_command(message, user_data, text):
@@ -114,7 +120,13 @@ async def process_command(message, user_data, text):
         await set_config_key_value(message, user_data, key, value)
     elif command == "show":
         key, value = get_command_and_text_pair(text)
-        await show_personal_data(message, user_data, key, value)
+        if key == "profile":
+            if "all" in value:
+                all_users = await get_all_user_data()
+                for user in all_users:
+                    await show_personal_data(message, user)
+            else:
+                await show_personal_data(message, user_data)
     elif command == "test":
         print(command)
     else:
