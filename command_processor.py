@@ -121,7 +121,7 @@ async def process_command(message, user_data, text):
     elif command == "show":
         key, value = get_command_and_text_pair(text)
         if key == "profile":
-            if "all" in value:
+            if value and "all" in value:
                 all_users = await get_all_user_data()
                 for user in all_users:
                     await show_personal_data(message, user)
