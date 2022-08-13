@@ -4,8 +4,8 @@ from data_classes.default_config_handler import DefaultConfigHandler
 from keep_alive import keep_alive
 from data_classes.user_data_repo import UserData
 from utils import get_command_and_text_pair
-from command_processor import process_command
-from attendance_schedule import AttendanceSchedule
+from commands.command_processor import process_command
+from scheduler_services.attendance_schedule import AttendanceSchedule
 import asyncio
 from bot_obj import bot
 

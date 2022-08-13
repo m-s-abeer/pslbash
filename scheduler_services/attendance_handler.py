@@ -7,7 +7,6 @@ from utils import (
     time_in_range,
     time_difference_in_mins,
     ping_heroku,
-    get_user_mention_string,
 )
 from datetime import time
 import asyncio

@@ -5,7 +5,7 @@ from db_handler import (
     get_broadcast_channel,
     get_cur_bangladeshi_date,
 )
-from attendance_handler import scheduled_checkin_checkout
+from scheduler_services.attendance_handler import scheduled_checkin_checkout
 from datetime import time
 
 
