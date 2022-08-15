@@ -1,8 +1,8 @@
 import sys
 
-from .mongo_db_doc import MongoDBDoc
+from db_app.mongo_data_classes.mongo_db_doc import MongoDBDoc
 
-sys.path.append("..")
+sys.path.append("../..")
 
 from env_vars import DEFAULT_CHANNEL
 

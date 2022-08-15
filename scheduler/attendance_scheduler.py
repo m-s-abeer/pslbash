@@ -1,11 +1,11 @@
 from discord.ext import tasks, commands
-from data_classes.default_config_handler import DefaultConfigHandler
+from db_app.collections.default_config_handler import DefaultConfigHandler
 from utils import get_3_char_weekday_today, get_cur_bangladeshi_time, time_in_range
-from db_handler import (
+from db_app.utils import (
     get_broadcast_channel,
     get_cur_bangladeshi_date,
 )
-from scheduler_services.attendance_handler import scheduled_checkin_checkout
+from scheduler.attendance_handler import scheduled_checkin_checkout
 from datetime import time
 
 

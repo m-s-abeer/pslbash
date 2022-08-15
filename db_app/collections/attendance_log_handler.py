@@ -1,4 +1,4 @@
-from .mongo_db_doc import MongoDBDoc
+from db_app.mongo_data_classes.mongo_db_doc import MongoDBDoc
 
 
 class AttendanceLogHandler(MongoDBDoc):

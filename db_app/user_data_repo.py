@@ -1,7 +1,7 @@
-from data_classes.discord_user_handler import DiscordUserHandler
-from data_classes.ho_credential_handler import HoCredentialHandler
-from data_classes.personal_config_handler import PersonalConfigHandler
-from data_classes.attendance_log_handler import AttendanceLogHandler
+from db_app.collections.discord_user_handler import DiscordUserHandler
+from db_app.collections.ho_credential_handler import HoCredentialHandler
+from db_app.collections.personal_config_handler import PersonalConfigHandler
+from db_app.collections.attendance_log_handler import AttendanceLogHandler
 
 
 class UserData:

@@ -2,9 +2,9 @@ from commands.config_commands import set_config_key_value
 from commands.mylist_commands import process_mylist_commands
 from commands.profile_commands import set_profile_key_value, show_personal_data
 from commands.random_replies import send_random_reply
-from db_handler import get_all_user_data
+from db_app.utils import get_all_user_data
 from utils import get_command_and_text_pair
-from scheduler_services.attendance_handler import checkin, checkin_all, checkout_all, checkout
+from scheduler.checkin_checkout_services import checkin, checkout, checkin_all, checkout_all
 
 
 async def process_command(message, user_data, text):

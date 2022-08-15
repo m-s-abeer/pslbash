@@ -1,5 +1,5 @@
-from scheduler_services.attendance_handler import clear_checkin_all, clear_checkout_all
-from data_classes.default_config_handler import DefaultConfigHandler
+from scheduler.checkin_checkout_services import clear_checkin_all, clear_checkout_all
+from db_app.collections.default_config_handler import DefaultConfigHandler
 
 
 async def set_config_key_value(message, user_data, key, value):

@@ -1,6 +1,6 @@
-from data_classes.default_config_handler import DefaultConfigHandler
-from data_classes.discord_user_handler import DiscordUserHandler
-from data_classes.user_data_repo import UserData
+from db_app.collections.default_config_handler import DefaultConfigHandler
+from db_app.collections.discord_user_handler import DiscordUserHandler
+from db_app.user_data_repo import UserData
 from utils import get_cur_bangladeshi_date, get_cur_bangladeshi_time
 
 

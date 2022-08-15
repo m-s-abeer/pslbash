@@ -87,7 +87,7 @@ async def get_user_obj_with_id(user_id):
         user_obj = await client.fetch_user(user_id)
     except:
         print(f"user {user_id} not found!")
-        # from db_handler import remove_profile_with_id
+        # from db_app import remove_profile_with_id
         # await remove_profile_with_id(user_id)
         return None
     return user_obj

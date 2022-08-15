@@ -1,8 +1,5 @@
 import sys
 from pymongo import MongoClient
-
-sys.path.append("..")
-
 from env_vars import MONGO_CERT_PATH
 
 
